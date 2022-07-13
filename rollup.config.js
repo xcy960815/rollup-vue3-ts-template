@@ -1,8 +1,7 @@
 import progress from 'rollup-plugin-progress';
-import json from "rollup-plugin-json"
+import json from "@rollup/plugin-json"
 import postcss from 'rollup-plugin-postcss'
 import vue from '@vitejs/plugin-vue'
-import vue1 from "rollup-plugin-vue"
 import {
     terser
 } from 'rollup-plugin-terser'
@@ -48,7 +47,7 @@ const initConfig = () => {
             }
         ],
         plugins: [
-            del({
+           !isDev && del({
                 targets: ['dist']
             }),
             alias({

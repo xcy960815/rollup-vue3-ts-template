@@ -1,7 +1,4 @@
 <template>
-    <div class='example'>
-        APPPPPPPP
-    </div>
     <rollup-vue3-ts-template></rollup-vue3-ts-template>
 </template>
 <script lang='ts' setup>
