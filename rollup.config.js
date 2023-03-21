@@ -1,133 +1,126 @@
-import progress from 'rollup-plugin-progress';
-import json from "@rollup/plugin-json"
-import postcss from 'rollup-plugin-postcss'
-import vue from '@vitejs/plugin-vue'
-import {
-    terser
-} from 'rollup-plugin-terser'
-import {
-    nodeResolve
-} from '@rollup/plugin-node-resolve'
-import typescript2 from 'rollup-plugin-typescript2'
-import babel from '@rollup/plugin-babel'
-import commonjs from '@rollup/plugin-commonjs'
-import {
-    DEFAULT_EXTENSIONS
-} from '@babel/core'
-import livereload from 'rollup-plugin-livereload'
-import del from "rollup-plugin-delete"
-import path from "path"
+import progress from "rollup-plugin-progress";
+import json from "@rollup/plugin-json";
+import postcss from "rollup-plugin-postcss";
+import vue from "@vitejs/plugin-vue";
+import { terser } from "rollup-plugin-terser";
+import { nodeResolve } from "@rollup/plugin-node-resolve";
+import typescript2 from "rollup-plugin-typescript2";
+import babel from "@rollup/plugin-babel";
+import commonjs from "@rollup/plugin-commonjs";
+import { DEFAULT_EXTENSIONS } from "@babel/core";
+import livereload from "rollup-plugin-livereload";
+import del from "rollup-plugin-delete";
+import path from "path";
 
-import alias from '@rollup/plugin-alias';
+import alias from "@rollup/plugin-alias";
 // 判断是不是 生产环境
-const isDev = process.env.NODE_ENV !== 'production'
-
+const isDev = process.env.NODE_ENV !== "production";
 
 // 初始化配置
 const initConfig = () => {
-
-    return {
-        input: 'src/index.ts',
-        output: [{
-                file: 'dist/rollup-vue3-ts-template.umd.js',
-                format: 'umd',
-                exports: 'named', // 关闭   Mixing named and default exports  警告
-                name: "RollupVue3TsTemplate",
-                globals: {
-                    "vue": 'vue',
-                },
-            },
-            {
-                file: 'dist/rollup-vue3-ts-template.esm.js',
-                format: 'esm',
-                name: "RollupVue3TsTemplate",
-                globals: {
-                    vue: 'vue',
-                },
-            }
+  return {
+    input: "src/index.ts",
+    output: [
+      {
+        file: "dist/rollup-vue3-ts-template.umd.js",
+        format: "umd",
+        exports: "named", // 关闭   Mixing named and default exports  警告
+        name: "RollupVue3TsTemplate",
+        globals: {
+          vue: "vue",
+        },
+      },
+      {
+        file: "dist/rollup-vue3-ts-template.esm.js",
+        format: "esm",
+        name: "RollupVue3TsTemplate",
+        globals: {
+          vue: "vue",
+        },
+      },
+    ],
+    plugins: [
+      !isDev &&
+        del({
+          targets: ["dist"],
+        }),
+      alias({
+        entries: [
+          {
+            find: "@",
+            replacement: path.resolve(__dirname, "./src"),
+          },
         ],
-        plugins: [
-           !isDev && del({
-                targets: ['dist']
-            }),
-            alias({
-                entries: [{
-                        find: '@',
-                        replacement: path.resolve(__dirname, './src')
-                    },
+      }),
 
-                ]
-            }),
+      vue(),
 
-            vue(),
+      typescript2({
+        // 将根目录的tsconfig.json作为配置文件
+        useTsconfigDeclarationDir: true,
+        abortOnError: false,
+      }),
 
+      commonjs(),
+      nodeResolve({
+        // mainField: ['jsnext:main', 'browser', 'module', 'main'],
+        // browser: true,
+        // dedupe: ['vue']
+        extensions: [".mjs", ".js", ".ts", ".jsx", ".tsx", ".json"],
+      }),
+      json(),
 
-            typescript2({
-                // 将根目录的tsconfig.json作为配置文件
-                useTsconfigDeclarationDir: true,
-                abortOnError: false
-            }),
+      postcss({
+        plugins: [require("autoprefixer")],
+        // 把 css 插入到 style 中
+        inject: true,
+        // 把 css 放到和js同一目录
+        // extract: true
+        // Minimize CSS, boolean or options for cssnano.
+        minimize: !isDev,
+        // Enable sourceMap.
+        sourceMap: isDev,
+        // This plugin will process files ending with these extensions and the extensions supported by custom loaders.
+        extensions: [".sass", ".less", ".scss", ".css"],
+      }),
 
-            commonjs(),
-            nodeResolve({
-                // mainField: ['jsnext:main', 'browser', 'module', 'main'],
-                // browser: true,
-                // dedupe: ['vue']
-                extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
-            }),
-            json(),
+      babel({
+        skipPreflightCheck: true,
+        exclude: "node_modules/**",
+        babelHelpers: "runtime",
+        // babel 默认不支持 ts 需要手动添加
+        extensions: [...DEFAULT_EXTENSIONS, ".ts", ".tsx", ".vue"],
+      }),
 
-            postcss({
-                plugins: [require('autoprefixer')],
-                // 把 css 插入到 style 中
-                inject: true,
-                // 把 css 放到和js同一目录
-                // extract: true
-                // Minimize CSS, boolean or options for cssnano.
-                minimize: !isDev,
-                // Enable sourceMap.
-                sourceMap: isDev,
-                // This plugin will process files ending with these extensions and the extensions supported by custom loaders.
-                extensions: ['.sass', '.less', '.scss', '.css']
-            }),
+      // 如果不是开发环境，开启压缩
+      !isDev &&
+        terser({
+          toplevel: true,
+        }),
 
-            babel({
-                skipPreflightCheck: true,
-                exclude: 'node_modules/**',
-                babelHelpers: 'runtime',
-                // babel 默认不支持 ts 需要手动添加
-                extensions: [...DEFAULT_EXTENSIONS, '.ts', '.tsx', '.vue']
-            }),
+      // 热更新
+      isDev && livereload(),
 
-            // 如果不是开发环境，开启压缩
-            !isDev && terser({
-                toplevel: true
-            }),
+      // 显示打包过程 和 进度
+      progress({
+        clearLine: false, // default: true
+      }),
+    ],
 
-            // 热更新
-            isDev && livereload(),
+    context: "window", //屏蔽 'THIS_IS_UNDEFINED' 警告
 
-            // 显示打包过程 和 进度
-            progress({
-                clearLine: false // default: true
-            })
-        ],
+    // 屏蔽一些不需要的警告
+    // onwarn: function (warning) {
+    //     if (warning.code === 'THIS_IS_UNDEFINED' || warning.code === 'CIRCULAR_DEPENDENCY') {
+    //         return
+    //     }
+    //     console.error(`(!) ${warning.message}`)
+    // },
 
-        context: "window", //屏蔽 'THIS_IS_UNDEFINED' 警告
+    external: Object.keys(
+      require(path.resolve(__dirname, "./package.json")).peerDependencies || {}
+    ),
+  };
+};
 
-
-        // 屏蔽一些不需要的警告
-        // onwarn: function (warning) {
-        //     if (warning.code === 'THIS_IS_UNDEFINED' || warning.code === 'CIRCULAR_DEPENDENCY') {
-        //         return
-        //     }
-        //     console.error(`(!) ${warning.message}`)
-        // },
-
-        external: Object.keys(require(path.resolve(__dirname, './package.json')).peerDependencies || {}),
-
-    }
-}
-
-
-export default initConfig()
+export default initConfig();
